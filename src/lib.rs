@@ -1,4 +1,4 @@
-pub use display_macro_impl::display;
+pub use display_me_impl::display;
 
 #[cfg(test)]
 mod test;

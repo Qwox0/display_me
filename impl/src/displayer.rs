@@ -15,110 +15,15 @@ pub(crate) struct DisplayArgs {
 }
 
 impl DisplayArgs {
-    pub fn parse_struct(input: ParseStream) -> Result<DisplayArgs> {
-        Ok(DisplayArgs {
-            fmt: input.parse()?,
-            args: parse_token_expr(input, false, false)?,
-        })
-    }
-
-    pub fn parse_tuple_struct(input: ParseStream) -> Result<DisplayArgs> {
-        Ok(DisplayArgs {
-            fmt: input.parse()?,
-            args: parse_token_expr(input, false, true)?,
-        })
-    }
-
-    pub fn get_parser<F>(is_tuple_struct: bool) -> F
-    where
-        F: Fn(ParseStream) -> Result<DisplayArgs>,
-    {
-        todo!()
+    pub fn get_parser(is_tuple_struct: bool) -> impl Fn(ParseStream) -> Result<DisplayArgs> {
+        move |input: &syn::parse::ParseBuffer| {
+            Ok(DisplayArgs {
+                fmt: input.parse()?,
+                args: parse_token_expr(input, false, is_tuple_struct)?,
+            })
+        }
     }
 }
-
-/*
-impl<'a> DisplayArgs<'a> {
-    pub(crate) fn parse_format_tuple_args(&mut self) -> Result<()> {
-        println!("{:#?}", self);
-        let fmt_str = self.fmt.value();
-        let fmt_span = self.fmt.span();
-
-        macro_rules! iter_until {
-            ( $iter:ident -> $target:literal ) => {{
-                let mut buf = String::new();
-                let found_target: bool = loop {
-                    let Some(ch) = $iter.next() else { break false; };
-                    buf.push(ch);
-                    if ch == $target {
-                        break true;
-                    };
-                };
-
-                (buf, found_target)
-            }};
-        }
-
-        let mut iter = fmt_str.chars();
-        let mut fmt_str = "".to_string();
-        let mut idents = vec![];
-        loop {
-            let (buf, found_target) = iter_until!(iter -> '{');
-            fmt_str.push_str(&buf);
-            if found_target == false {
-                break;
-            }
-            let (mut buf, found_target) = iter_until!(iter -> '}');
-            if found_target == false {
-                panic!("missing '}}'")
-            }
-            buf.pop();
-            // buf == "" or "ident" or ":?" or "ident:?" or ":#?" or "ident:#?"
-            println!("{:?}", buf);
-            let (ident, modifier) = match buf.split_once(':') {
-                None => (buf, "".to_string()),
-                Some((ident, modifier)) => (ident.to_string(), ":".to_string() + modifier),
-            };
-            let ident = if ident.len() == 0 {
-                None
-            } else {
-                Some(format_ident!("_{}", ident))
-            };
-            println!("{:?}   {:?}", ident, modifier);
-            //let ident = ident.map(|s| s.trim_start_matches('_').to_string());
-            idents.push(ident);
-            fmt_str.push_str(&modifier);
-            fmt_str.push('}');
-        }
-
-        self.fmt = LitStr::new(fmt_str.as_str(), fmt_span); // this span is most likely incorrect
-        let mut old_args = self.args.clone().into_iter();
-        self.args = TokenStream::from_iter(idents.into_iter().fold(
-            vec![],
-            |mut acc: Vec<TokenTree>, i| {
-                acc.push(TokenTree::Punct(Punct::new(
-                    ',',
-                    proc_macro2::Spacing::Alone,
-                )));
-                acc.push(if let Some(i) = i {
-                    TokenTree::Ident(i)
-                } else {
-                    old_args.next().expect("',' literal");
-                    old_args.next().expect("argument given for format literal")
-                });
-                acc
-            },
-        ));
-        println!("{:?}", self);
-        Ok(())
-    }
-
-    pub(crate) fn parse_format_tuple_args2(&mut self) -> Result<()> {
-        println!("{:#?}", self);
-        Ok(())
-    }
-}
-*/
 
 pub(crate) struct Displayer {
     fmt: LitStr,
@@ -236,3 +141,86 @@ fn parse_token_expr(
     }
     Ok(TokenStream::from_iter(tokens))
 }
+
+/*
+impl<'a> DisplayArgs<'a> {
+    pub(crate) fn parse_format_tuple_args(&mut self) -> Result<()> {
+        println!("{:#?}", self);
+        let fmt_str = self.fmt.value();
+        let fmt_span = self.fmt.span();
+
+        macro_rules! iter_until {
+            ( $iter:ident -> $target:literal ) => {{
+                let mut buf = String::new();
+                let found_target: bool = loop {
+                    let Some(ch) = $iter.next() else { break false; };
+                    buf.push(ch);
+                    if ch == $target {
+                        break true;
+                    };
+                };
+
+                (buf, found_target)
+            }};
+        }
+
+        let mut iter = fmt_str.chars();
+        let mut fmt_str = "".to_string();
+        let mut idents = vec![];
+        loop {
+            let (buf, found_target) = iter_until!(iter -> '{');
+            fmt_str.push_str(&buf);
+            if found_target == false {
+                break;
+            }
+            let (mut buf, found_target) = iter_until!(iter -> '}');
+            if found_target == false {
+                panic!("missing '}}'")
+            }
+            buf.pop();
+            // buf == "" or "ident" or ":?" or "ident:?" or ":#?" or "ident:#?"
+            println!("{:?}", buf);
+            let (ident, modifier) = match buf.split_once(':') {
+                None => (buf, "".to_string()),
+                Some((ident, modifier)) => (ident.to_string(), ":".to_string() + modifier),
+            };
+            let ident = if ident.len() == 0 {
+                None
+            } else {
+                Some(format_ident!("_{}", ident))
+            };
+            println!("{:?}   {:?}", ident, modifier);
+            //let ident = ident.map(|s| s.trim_start_matches('_').to_string());
+            idents.push(ident);
+            fmt_str.push_str(&modifier);
+            fmt_str.push('}');
+        }
+
+        self.fmt = LitStr::new(fmt_str.as_str(), fmt_span); // this span is most likely incorrect
+        let mut old_args = self.args.clone().into_iter();
+        self.args = TokenStream::from_iter(idents.into_iter().fold(
+            vec![],
+            |mut acc: Vec<TokenTree>, i| {
+                acc.push(TokenTree::Punct(Punct::new(
+                    ',',
+                    proc_macro2::Spacing::Alone,
+                )));
+                acc.push(if let Some(i) = i {
+                    TokenTree::Ident(i)
+                } else {
+                    old_args.next().expect("',' literal");
+                    old_args.next().expect("argument given for format literal")
+                });
+                acc
+            },
+        ));
+        println!("{:?}", self);
+        Ok(())
+    }
+
+    pub(crate) fn parse_format_tuple_args2(&mut self) -> Result<()> {
+        println!("{:#?}", self);
+        Ok(())
+    }
+}
+*/

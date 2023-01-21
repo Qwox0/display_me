@@ -37,11 +37,8 @@ pub fn display(args: TokenStream, input: TokenStream) -> TokenStream {
     let fields = StructFields::from(input.fields);
 
     //let args = parse_macro_input!(args as AttributeArgs);
-    let args = if fields.is_tuple_struct() {
-        parse_macro_input!(args with DisplayArgs::parse_tuple_struct)
-    } else {
-        parse_macro_input!(args with DisplayArgs::parse_struct)
-    };
+    let parser = DisplayArgs::get_parser(fields.is_tuple_struct());
+    let args = parse_macro_input!(args with parser);
 
     let displayer = match Displayer::new(args, fields) {
         Ok(displayer) => displayer,
