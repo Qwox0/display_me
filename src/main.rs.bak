@@ -1,0 +1,30 @@
+use display_macro::display;
+
+mod b {
+    use super::display;
+    #[display("Some Errors: {} {}", self.0, self.1)]
+    pub struct Error(pub String, pub String);
+}
+
+mod c {
+    use super::display;
+    #[display("Some Errors: {} {}", self.expected, got)]
+    pub struct Error {
+        pub expected: String,
+        pub got: String,
+    }
+}
+
+use b::Error as Error2;
+use c::Error as Error3;
+
+fn main() {
+    let err2: Error2 = Error2("abc".to_string(), "def".to_string());
+    println!("{}", err2);
+
+    let err3: Error3 = Error3 {
+        expected: "abc".to_string(),
+        got: "def".to_string(),
+    };
+    println!("{}", err3);
+}
