@@ -11,7 +11,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{parse_macro_input, ItemStruct};
 
-/// Macro for deriving the [std::fmt::Display] Trait. It uses a Syntax similar to the [format!] Macro.
+/// Macro for deriving the [::std::fmt::Display] Trait. It uses syntax similar to the [format!] Macro.
 ///
 /// # Examples
 ///
@@ -22,8 +22,8 @@ use syn::{parse_macro_input, ItemStruct};
 ///     pub age: u8,
 /// }
 /// assert_eq!(
-///     "Person 3 is called Bob",
-///     Person { id: 3, name: "Bob" }.to_string()
+///     "Bob is a Person and is 42 years old",
+///     Person { name: "Bob", age: 42 }.to_string()
 /// );
 ///
 /// ```
